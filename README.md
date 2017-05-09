@@ -12,7 +12,7 @@ This project contains the results from completing Project 4 of the Udacity Self-
 * The code for the project is all contained in the [project notebook](./project_notebook.ipynb)
 * The main [project video](./output_videos/project_video_process.mp4)
 * The [diagnostic video](./output_videos/project_video_diagnostic.mp4)
-* A passable attempt at a somewhat more [challenging video](./output_videos/challenge_video_diagnostic.mp4)
+* A passable attempt at a somewhat more [challenging video](./output_videos/challenge_video_process.mp4)
 * A [writeup](./WRITEUP.md) detailing the results of the project
 
 #### Running the code

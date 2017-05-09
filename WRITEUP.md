@@ -210,7 +210,7 @@ Distinguishing signal from noise is crucial for generating well-fitting lane lin
 
 ## References
 
-[1] [Dissecting the Camera Matrix, Part 3: The Intrinsic Matrix](http://ksimek.github.io/2013/08/13/intrinsic/)
-[2] [OpenCV calibrateCamera](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#calibratecamera)
-[3] [Contrast Limited Adaptive Histogram Equalization](https://en.wikipedia.org/wiki/Adaptive_histogram_equalization#Contrast_Limited_AHE)
-[4] [Radius of Curvature](https://en.wikipedia.org/wiki/Radius_of_curvature)
+- [1] [Dissecting the Camera Matrix, Part 3: The Intrinsic Matrix](http://ksimek.github.io/2013/08/13/intrinsic/)
+- [2] [OpenCV calibrateCamera](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#calibratecamera)
+- [3] [Contrast Limited Adaptive Histogram Equalization](https://en.wikipedia.org/wiki/Adaptive_histogram_equalization#Contrast_Limited_AHE)
+- [4] [Radius of Curvature](https://en.wikipedia.org/wiki/Radius_of_curvature)

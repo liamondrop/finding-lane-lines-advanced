@@ -204,13 +204,13 @@ Here is a link to a [diagnostic video](./output_videos/project_video_diagnostic.
 
 ### Considerations for Future Improvements
 
-#### Using Fixed Quadrangles
+#### Dynamic Quadrangles
 
 Using two fixed quadrangles for the perspective transform is not really ideal. Whenever the angle of the ground relative to the vehicle changes, for example, when the car encounters bumps or descends a hill, the warped birds-eye image fluctuates and the lanes quickly lose their apparent parallelism, making it very difficult to determine whether the lane lines are valid. I believe a more robust system would use dynamic ground-plane estimation methods to compute and project the destination quadrangle onto the ground. However, there is not time to explore that topic in the current project.
 
-#### Better Filtering
+#### Dynamic Range Color Filtering
 
-Distinguishing signal from noise is crucial for generating well-fitting lane lines. As seen in the challenge video, when lines do not strongly contrast with the surrounding pavement, it can be difficult to find them in the image, especially when there are other artifacts on the road, like tar or cracks. Shifting quickly from bright light to shadow also poses a challenge. Currently, the project uses fixed color ranges that do a pretty good job of isolating the lane lines across the two videos, generally. However, at times, the lane colors fall well outside of those ranges. It would be interesting to experiment with dynamic color ranges that are centered on some set of values, such as the mean value of the current frame and attempting to locate the colors that are yellower and whiter than their surroundings, even if they wouldn't appear to be yellow or white placed next to a lane in full sunlight.
+Distinguishing signal from noise is crucial for generating well-fitting lane lines. As seen in the challenge video, when lines do not strongly contrast with the surrounding pavement, it can be difficult to find them in the image, especially when there are other artifacts on the road, like tar or cracks. Shifting quickly from bright light to shadow also poses a challenge. Currently, the project uses fixed color ranges that do a pretty good job of isolating the lane lines across the two videos, generally. However, at times, the lane colors fall well outside of those ranges. It would be interesting to experiment with dynamic color ranges that are centered on some calculated set of values, such as the mean value of the current frame. It should be possible to locate the colors that are relatively yellow and white compared to their surroundings, even if they wouldn't appear to be yellow or white placed next to a lane in full sunlight.
 
 ## References
 

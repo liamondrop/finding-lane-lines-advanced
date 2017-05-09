@@ -140,13 +140,19 @@ Since we will be finding lane lines across a stream of video images, there shoul
 
 With our sets of found points for left and right lanes, it is now possible to fit a 2nd degree polynomial that minimizes the squared error of all the points, using Numpy's `polyfit()` function by passing all the X and Y coordinates of the points. This returns the 3 coefficients of the curve (A,B,C). Passing these coefficients to Numpy's `poly1d()` returns a function that will return an X value lying on the curve for any given Y. By simply passing a range of values from 0 to the pixel height of the image, we now have the pixel coordinates of our lane curve. These
 
-### 5. Measuring the Radius of Curvature of a Lane Line
+### 5. Measuring the Radius of Curvature and Vehicle Position
+
+#### Radius of Curvature
 
 The radius of curvature of a curve is defined as the radius of the circular arc which best approximates the curve at a given point[4]. This radius changes as we move along the curve. The formula for the radius of curvature at any point x is given as:
 
 ![Radius of Curvature](./examples/radius_of_curvature.png)
 
 In python, we can re-write this as `(1 + (2*A*y_val + B)**2)**1.5 / np.abs(2*A)` where A, B, and C are the coefficients of the 2nd degree polynomial defining a curve. Since we'd like to match this curvature to the real world, we scale the initial values used to create the curve function by some constant mapping a pixel width and height to meters. This returns us the radius values for the left and right lane lines that you see overlaid on the output video below. As expected, when the road is closer to straight, the radius of the circle becomes very large. And as the curve in the road becomes sharper, the radius shrinks. Of course, the precision of this procedure is not likely to be exact as the perspective warp is not a perfect mapping from the real world, but it provides a decent approximation.
+
+#### Vehicle Position
+
+In order to judge the vehicle's position relative to the center of the lane, it's only necessary to calculate the mean of the X values of the detected lane lines at the bottom of the image. Since the camera is mounted in the car's center, calculating the difference between the image's horizontal midpoint and the lane center yields the relative position. This difference can then be scaled by the same constant we used to calculate the radius of curvature in meters.
 
 ### 6. Projecting the Curves Onto the Original Image
 
@@ -180,7 +186,7 @@ Similarly, I also ensure that the distance between the lane lines is roughly the
 
 The initial results of drawing the found lane lines and projecting them back to the video frames worked quite well, in that the curves appeared to closely match the lane lines in any individual frame. However, there was a certain amount of jitter from frame to frame, as the information is sometimes sparse, rendering curves that do not closely match the one before it, as well as the lanes that did not pass the sanity checks being discarded.
 
-To counter this, I created a buffer for each of the lane lines. Essentially, I created 2 lists, to which I appended the latest set of curve coefficients for each new frame. Keeping only the most recent N sets of curve coefficients in the buffer, I computed the mean A,B,C values and plotted that as the current curve. This created a much smoother transition from frame to frame. I settled on a maximum buffer size of 3, which provides temporal smoothing, but also doesn't appear to lag behind the video, which tends to happen if the buffer size is much larger.
+To counter this, I created a buffer for each of the lane lines. Essentially, I created 2 lists, to which I appended the latest set of curve coefficients for each new frame. Keeping only the most recent N sets of curve coefficients in the buffer, I computed the mean curve coefficients and plotted these to obtain the current curve. This created a much smoother transition from frame to frame. I settled on a maximum buffer size of 3, which provides temporal smoothing, but also doesn't appear to lag much behind the video, which tends to happen if the buffer size is much larger.
 
 Here is a link to my final, smoothed [output video](./output_videos/project_video_process.mp4).
 

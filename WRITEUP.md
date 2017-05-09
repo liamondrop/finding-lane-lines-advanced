@@ -1,11 +1,12 @@
 # **Finding Lane Lines (Advanced)**
 
 ## Preliminaries
+
 ### Camera Calibration
 
-The images captured by a lensed (as opposed to a pinhole) camera are subject to some amount of distortion, due to the curvature of the lens, as well as other more subtle factors like the shape, orientation, and quality of the sensors that capture the light information. For these reasons, images captured by one camera are highly unlikely to be exactly like those captured by another. The curvature calculations in this project require warping the image to mimic a birds-eye perspective of the road. In order to do this accurately, we need to correct for the lens distortion in an operation called camera calibration.
+The images captured by a lensed (as opposed to a pinhole) camera are subject to some amount of distortion, due to the curvature of the lens, as well as other more subtle factors like the shape, orientation, and quality of the sensors that capture the light information. For these reasons, images captured by one camera are highly unlikely to be exactly like those captured by another. Accurately fitting the lane lines in this project requires warping the image to mimic a birds-eye perspective of the road. In order to do this accurately, it is necessary to correct for the lens distortion in an operation called camera calibration.
 
-Camera calibration is accomplished by feeding in several images of a checkerboard pattern. We use a checkerboard pattern because the relative dimensions are known: namely, the 4 corners of a given checkerboard square should be equidistant from each other. By feeding in several images of these, taken at varying angles with the camera we mean to calibrate, and defining the number of corners we expect to find, it is possible to calculate the focal length, axis skew, and principle point offset parameters that compose the camera's intrinsic matrix[1] as well as its distortion coefficients[2], known as the intrinsic and extrinsic parameters of the camera. The code to accomplish this can be found in cells 3 and 4 of the [project notebook](./project_notebook.ipynb).
+Camera calibration is accomplished by feeding in several images of a checkerboard pattern. We use a checkerboard pattern because the relative dimensions are known: namely, the 4 corners of a given checkerboard square when viewed head on should be equidistant from each other. By feeding in several images of these, taken at varying angles with the camera we mean to calibrate, and defining the number of corners we expect to find, it is possible to calculate the focal length, axis skew, and principle point offset parameters that compose the camera's intrinsic matrix[1] as well as its distortion coefficients[2], known as the intrinsic and extrinsic parameters of the camera. The code to accomplish this can be found in cells 3 and 4 of the [project notebook](./project_notebook.ipynb).
 
 ![Camera Calibration](./output_images/camera_calibration.png)
 
@@ -35,13 +36,13 @@ Now that we have these coordinates, we pass `obj_points` and `img_points` to the
 
 ### Undistortion and Perspective Transform
 
-Armed with these two sets of parameters, it is now simple work to undistort any image by passing them, as well as the image, to `cv2.undistort()`. With our undistorted image, we can now make an accurate perspective transformation. We accomplish this by first defining two quadrangles. We calculate the projection of the source (`src`) quadrangle to the destination quadrangle (`dst`) by passing them to `cv2.getPerspective()`, and use the resulting transformation matrix to transform the image.
+Armed with these two sets of parameters, it is now simple work to undistort any image by passing the parameters and the image, to `cv2.undistort()`. With the undistorted image, we can now make an accurate perspective transformation. This is accomplished by first defining two quadrangles. Then calculate the projection of the source (`src`) quadrangle to the destination quadrangle (`dst`) by passing the quadrangles to `cv2.getPerspectiveTransform()`, and use the resulting transformation matrix to transform the image.
 
 The code to do this can be found in cell 5 of the project notebook, and the result of applying these operations to the checkerboard images can be seen here:
 
 ![Undistorted/Warped Checkerboard](./output_images/undistorted_checkerboard.png)
 
-In the above image, we have located the 4 corners of the triangle bounding the detected chessboard corners in the undistorted image. These will be our `src`. The `dst` is simply a rectangle parallel to the image plane. Projecting from the `src` to the `dst` renders the image on the right. But the operation is also fully reversible. This will come in handle later when we want to reproject our birds-eye image of the lane curves back onto the original input image.
+In the above image, we have located the 4 corners of the polygon bounding the detected chessboard corners in the undistorted image. These will be our `src`. The `dst` is simply a rectangle parallel to the image plane. Projecting from the `src` to the `dst` renders the image on the right. This operation is reversible, meaning we can get the perspective transform from the `dst` back to the `src` by simply reversing the arguments passed to `cv2.getPerspectiveTransform()`. This will come in handy later when we want to reproject our birds-eye image of the lane curves back onto the original input image.
 
 ## Image Processing Pipeline
 
@@ -49,7 +50,7 @@ The code for the image processing pipeline is contained in a class called `LaneD
 
 ### 1. Projecting the Road Image to Birds-eye View
 
-The first step of the pipeline for finding lane lines is to transform the image to a birds-eye view of the road. We do this by defining `src` and `dst` quadrangles, the first matching as closely as possible to the 3D coordinates of a plane coincident to the road in the image, and the second a projection of that rectangle parallel to the camera plane. By defining real valued offsets for the top, upper and lower corners of the image, I empirically came up with values for each of the offsets. The code to retrieve the two quadrangles is in the `get_quadrangles()` method of the `LaneDetector` class.
+The first step of the pipeline for finding lane lines is to transform the image to a birds-eye view of the road. We do this by defining `src` and `dst` quadrangles, the first matching as closely as possible to the 3D coordinates of a plane coincident to the road in the image, and the second a projection of that rectangle parallel to the camera plane. The code to retrieve the two quadrangles is in the `get_quadrangles()` method of the `LaneDetector` class.
 
 Next, we undistort the image, using the pre-calculated camera matrix and distortion coefficients, and apply a perspective transform using the `dst` and `src` quadrangles. Here is an example snippet of code I used to get the lanes as parallel as possible.
 
@@ -73,13 +74,9 @@ undistorted = undistort_image(image)
 warped = warp_image(undistorted, src, dst, (cols,rows))
 ```
 
-In the above code, the keyword arguments passed to the `LaneDetector` class at instantiation define the source and destination quadrangles. The `quad_top`, `quad_lower`, `quad_upper`, and `quad_projection_offset` arguments are real-valued numbers that represent percentages. For example, `quad_top` in this case is placed at 65.1% of the image height, while `quad_lower` and `quad_upper` are both percentage offsets from the left and right sides of the image. `quad_projection_offset` is the percentage from the left and right sides of the image where the sides of the `dst` quadrangle will be placed. Below are two views of relatively straight stretches of road that I used to decide on my quadrangles and test that my perspective warping was accurate. The source and destination quadrangles are overlaid in red. Note that I used the lane widths and error metrics visible in the warped images, which will be discussed later, to find the optimal shapes. That said, this could be potentially be improved further by calculating those metrics across a larger sample of images and using gradient descent to find the best quadrangle offsets.
+In the above code, the keyword arguments passed to the `LaneDetector` class at instantiation define the source and destination quadrangles. The `quad_top`, `quad_lower`, `quad_upper`, and `quad_projection_offset` arguments are real-valued numbers that represent percentages. For example, `quad_top` in this case is placed at 65.1% of the image height, while `quad_lower` and `quad_upper` are both percentage offsets from the left and right sides of the image. `quad_projection_offset` is the percentage from the left and right sides of the image where the sides of the `dst` quadrangle will be placed. Below are two views of relatively straight stretches of road that I used to decide on values of the quadrangle offsets and test that my perspective warping was accurate. The source and destination quadrangles are overlaid in red. Note that I used the lane widths and error metrics visible in the warped images, which will be discussed later, to find the optimal shapes. That said, this could be potentially be improved further by calculating those metrics across a larger sample of images and using gradient descent to find the best quadrangle offsets.
 
 ![Perspective Transform](./output_images/straight_lines_perspective_transform.png)
-
-#### A note on using fixed quadrangles
-
-Using two fixed quadrangles like this is not really ideal. Whenever the angle of the ground, relative to the vehicle changes, for example, when the car encounters bumps or descends a hill, the warped birds-eye image fluctuates and the lanes quickly lose their apparent parallelism. I believe a more robust system would use dynamic ground-plane estimation methods to compute and project the destination quadrangle onto the ground. However, there is not time to explore that topic in the current project.
 
 ### 2. Color Filtering and Gradients
 
@@ -181,7 +178,7 @@ Similarly, I also ensure that the distance between the lane lines is roughly the
 
 #### Temporal Smoothing
 
-The initial results of drawing the found lane lines and projecting them back to the video frames worked quite well, in that the curves appeared to closely match the lane lines in any individual frame. However, there was a certain amount of jitter from frame to frame, as the information was sometimes sparse, rendering curves that did not closely match the one before it, as well as the lanes that did not pass the sanity checks being discarded.
+The initial results of drawing the found lane lines and projecting them back to the video frames worked quite well, in that the curves appeared to closely match the lane lines in any individual frame. However, there was a certain amount of jitter from frame to frame, as the information is sometimes sparse, rendering curves that do not closely match the one before it, as well as the lanes that did not pass the sanity checks being discarded.
 
 To counter this, I created a buffer for each of the lane lines. Essentially, I created 2 lists, to which I appended the latest set of curve coefficients for each new frame. Keeping only the most recent N sets of curve coefficients in the buffer, I computed the mean A,B,C values and plotted that as the current curve. This created a much smoother transition from frame to frame. I settled on a maximum buffer size of 3, which provides temporal smoothing, but also doesn't appear to lag behind the video, which tends to happen if the buffer size is much larger.
 
@@ -195,26 +192,15 @@ By stacking a few different stages of the pipeline process together, I was able 
 
 Here is a link to a [diagnostic video](./output_videos/project_video_diagnostic.mp4).
 
+### Considerations for Future Improvements
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+#### Using Fixed Quadrangles
 
-![alt text][image6]
+Using two fixed quadrangles for the perspective transform is not really ideal. Whenever the angle of the ground relative to the vehicle changes, for example, when the car encounters bumps or descends a hill, the warped birds-eye image fluctuates and the lanes quickly lose their apparent parallelism, making it very difficult to determine whether the lane lines are valid. I believe a more robust system would use dynamic ground-plane estimation methods to compute and project the destination quadrangle onto the ground. However, there is not time to explore that topic in the current project.
 
----
+#### Better Filtering
 
-### Pipeline (video)
-
-#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
-
-Here's a [link to my video result](./project_video.mp4)
-
----
-
-### Discussion
-
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
-
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+Distinguishing signal from noise is crucial for generating well-fitting lane lines. As seen in the challenge video, when lines do not strongly contrast with the surrounding pavement, it can be difficult to find them in the image, especially when there are other artifacts on the road, like tar or cracks. Shifting quickly from bright light to shadow also poses a challenge. Currently, the project uses fixed color ranges that do a pretty good job of isolating the lane lines across the two videos, generally. However, at times, the lane colors fall well outside of those ranges. It would be interesting to experiment with dynamic color ranges that are centered on some set of values, such as the mean value of the current frame and attempting to locate the colors that are yellower and whiter than their surroundings, even if they wouldn't appear to be yellow or white placed next to a lane in full sunlight.
 
 ## References
 
